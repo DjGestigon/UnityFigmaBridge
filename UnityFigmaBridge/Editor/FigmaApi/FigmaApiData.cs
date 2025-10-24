@@ -6,18 +6,18 @@ namespace UnityFigmaBridge.Editor.FigmaApi
     /// <summary>
     /// Serialized class representing a bundle image fill data downloaded from Figma server
     /// </summary>
-    public class FigmaImageFillData 
+    public class FigmaImageFillData
     {
         public bool error;
         public int status;
         public FigmaImageFillMetaData meta;
     }
-    
-    
+
+
     /// <summary>
     /// Serialized class for Figma server render data
     /// </summary>
-    public class FigmaServerRenderData 
+    public class FigmaServerRenderData
     {
         public string err;
         public Dictionary<string, string> images;
@@ -30,11 +30,12 @@ namespace UnityFigmaBridge.Editor.FigmaApi
     {
         public Dictionary<string, string> images;
     }
-    
+
     // C# translation of Figma API classes
     // Data here - https://www.figma.com/developers/api#document-props
-    
-    public enum NodeType {
+
+    public enum NodeType
+    {
         DOCUMENT,
         CANVAS,
         FRAME,
@@ -59,17 +60,17 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         TABLE_CELL,
         WASHI_TAPE
     }
-    
-    
+
+
     /// <summary>
     /// Figma file (Document)
     /// </summary>
     public class FigmaFile
     {
         public Node document;
-        public Dictionary<string,Component> components;
+        public Dictionary<string, Component> components;
         public int schemaVersion;
-        public Dictionary<string,Style> styles;
+        public Dictionary<string, Style> styles;
         public string name;
         public string lastModified;
         public string thumbnailUrl;
@@ -89,9 +90,9 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         public string editorType;
         public string thumbnailUrl;
         public string err;
-        public Dictionary<string,FigmaFile> nodes;
+        public Dictionary<string, FigmaFile> nodes;
     }
-    
+
     public class Node
     {
         /// <summary>
@@ -106,28 +107,28 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <summary>
         /// Whether or not the node is visible on the canvas.
         /// </summary>
-        public bool visible=true; // Default to true
-        
+        public bool visible = true; // Default to true
+
         /// <summary>
         /// The type of the node, refer to table below for details
         /// </summary>
         public NodeType type;
-        
+
         /// <summary>
         /// Data written by plugins that is visible only to the plugin that wrote it. Requires the `pluginData` to include the ID of the plugin.
         /// </summary>
         public string pluginData;
-        
+
         /// <summary>
         /// Data written by plugins that is visible to all plugins. Requires the `pluginData` parameter to include the string "shared".
         /// </summary>
         public string sharedPluginData;
-        
+
         /// <summary>
         /// An array of nodes that are direct children of this node
         /// </summary>
         public Node[] children; // For DOCUMENT, CANVAS, FRAME
-        
+
         // For CANVAS
         /// <summary>
         /// Background color of the canvas.
@@ -148,13 +149,13 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// An array of export settings representing images to export from the canvas
         /// </summary>
         public ExportSetting[] exportSettings;
-        
+
         // FOR FRAME
         /// <summary>
         /// if true, layer is locked and cannot be edited
         /// </summary>
         public bool locked = false;
-        
+
         /// <summary>
         /// [DEPRECATED] Background of the node. This is deprecated, as backgrounds for frames are now in the fills field.
         /// </summary>
@@ -175,7 +176,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// </summary>
         public float strokeWeight;
 
-        
+
         public enum StrokeAlign
         {
             INSIDE, // stroke drawn inside the shape boundary
@@ -198,7 +199,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// </summary>
         /// <returns></returns>
         public float[] rectangleCornerRadii;
-    
+
         /// <summary>
         /// How this node blends with nodes behind it in the scene (see blend mode section for more details)
         /// </summary>
@@ -207,7 +208,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <summary>
         /// Keep height and width constrained to same ratio
         /// </summary>
-        public bool preserveRatio=false;
+        public bool preserveRatio = false;
 
         /// <summary>
         /// Horizontal and vertical layout constraints for node
@@ -222,17 +223,17 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             CENTER,
             MAX,
         }
-        
+
         /// <summary>
         /// Determines if the layer should stretch along the parent’s counter axis. This property is only provided for direct children of auto-layout frames.
         /// </summary>
         public LayoutAlign layoutAlign;
-        
+
         /// <summary>
         /// Node ID of node to transition to in prototyping
         /// </summary>
         public string transitionNodeID;
-        
+
         /// <summary>
         /// The duration of the prototyping transition on this node (in milliseconds)
         /// </summary>
@@ -246,8 +247,8 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <summary>
         /// Opacity of the node
         /// </summary>
-        public float opacity=1;
-            
+        public float opacity = 1;
+
         /// <summary>
         /// Bounding box of the node in absolute space coordinates
         /// </summary>
@@ -276,12 +277,13 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             NONE,
             HORIZONTAL,
             VERTICAL,
+            GRID
         }
 
         /// <summary>
         /// Whether this layer uses auto-layout to position its children
         /// </summary>
-        public LayoutMode layoutMode=LayoutMode.NONE;
+        public LayoutMode layoutMode = LayoutMode.NONE;
 
         public enum PrimaryAxisSizingMode
         {
@@ -316,7 +318,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <summary>
         /// Determines how the auto-layout frame’s children should be aligned in the primary axis direction. This property is only applicable for auto-layout frames
         /// </summary>
-        public PrimaryAxisAlignItems primaryAxisAlignItems=PrimaryAxisAlignItems.MIN;
+        public PrimaryAxisAlignItems primaryAxisAlignItems = PrimaryAxisAlignItems.MIN;
 
         public enum CounterAxisAlignItems
         {
@@ -324,12 +326,12 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             CENTER,
             MAX,
         }
-        
+
         /// <summary>
         /// Determines how the auto-layout frame’s children should be aligned in the counter axis direction. This
         /// property is only applicable for auto-layout frames.
         /// </summary>
-        public CounterAxisAlignItems counterAxisAlignItems=CounterAxisAlignItems.MIN;
+        public CounterAxisAlignItems counterAxisAlignItems = CounterAxisAlignItems.MIN;
 
         /// <summary>
         /// The padding betweeen the left border of the frame and its children. This property is only applicable for auto-layout frames
@@ -362,12 +364,27 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Deprecated in favor of setting individual paddings.
         /// </summary>
         public float verticalPadding = 0;
-        
+
         /// <summary>
         /// The distance between children of the frame. This property is only applicable for auto-layout frames.
         /// </summary>
         public float itemSpacing = 0;
-        
+
+        /// <summary>
+        /// The distance between children of the frame on the counter axis. This property is only applicable for auto-layout grid frames.
+        /// </summary>
+        public float counterAxisSpacing = 0;
+
+        /// <summary>
+        /// The number of columns in a grid layout.
+        /// </summary>
+        public int gridColumnCount;
+
+        /// <summary>
+        /// The number of rows in a grid layout.
+        /// </summary>
+        public int gridRowCount;
+
         /// <summary>
         /// An array of layout grids attached to this node (see layout grids section for more details).
         /// GROUP nodes do not have this attribute
@@ -387,7 +404,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// The frame can either scroll vertically, horizontally, or in both directions to the extents of the content
         /// contained within it. This behavior can be observed in a prototype.
         /// </summary>
-        public OverflowDirection overflowDirection=OverflowDirection.NONE;
+        public OverflowDirection overflowDirection = OverflowDirection.NONE;
 
         /// <summary>
         /// An array of effects attached to this node (see effects section for more details)
@@ -405,12 +422,12 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         public bool isMaskOutline;
 
 
-        
+
         // FOR VECTOR
-        
+
         // TODO - ADD VECTOR PROPERTIES
-        
-        
+
+
         // FOR TEXT
         /// <summary>
         /// Text contained within text box
@@ -431,20 +448,20 @@ namespace UnityFigmaBridge.Editor.FigmaApi
 
         // TODO- Overrides
         // styleOverrideTableMap<Number,TypeStyle>
-         //   Map from ID to TypeStyle for looking up style overrides 
+        //   Map from ID to TypeStyle for looking up style overrides 
 
-         
+
         // FOR INSTANCE
         /// <summary>
         /// ID of component that this instance came from, refers to components table (see endpoints section below)
         /// </summary>
         public string componentId;
-        
+
         // FOR ELLIPSE
         public ArcData arcData;
-        
+
     }
-    
+
     public class Color
     {
         public float r;
@@ -558,7 +575,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         EASE_IN_AND_OUT, // Ease in and then out with an animation curve similar to CSS ease-in-out.
         LINEAR,          // No easing, similar to CSS linear.
         GENTLE_SPRING, // Gentle spring animation similar to react-spring.
-        CUSTOM_BEZIER, 
+        CUSTOM_BEZIER,
         QUICK,
         GENTLE,
         BOUNCY,
@@ -611,7 +628,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Orientation of the grid as a string enum
         /// </summary>
         public Pattern pattern;
-        
+
         /// <summary>
         /// Width of column grid or height of row grid or square grid spacing
         /// </summary>
@@ -626,7 +643,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Color of the grid
         /// </summary>
         public Color color;
-        
+
         // The following properties are only meaningful for directional grids (COLUMNS or ROWS)
 
         public enum Alignment
@@ -651,15 +668,15 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Spacing before the first column or row
         /// </summary>
         public float offset;
-        
+
         /// <summary>
         /// Number of columns or rows
         /// </summary>
         public float count;
 
     }
-    
-    
+
+
     /// <summary>
     /// A visual effect such as a shadow or blur
     /// </summary>
@@ -676,7 +693,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Type of effect as a string enum
         /// </summary>
         public EffectType type;
-        
+
         /// <summary>
         /// Is the effect active?
         /// </summary>
@@ -688,7 +705,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         public float radius;
 
         // The following properties are for shadows only:
-        
+
         /// <summary>
         /// The color of the shadow
         /// </summary>
@@ -707,7 +724,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <summary>
         /// How far the shadow spreads
         /// </summary>
-        public float spread=0;
+        public float spread = 0;
 
     }
 
@@ -721,12 +738,12 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             URL,
             NODE,
         }
-        
+
         /// <summary>
         /// Type of hyperlink
         /// </summary>
         public HyperlinkType type;
-        
+
         /// <summary>
         /// URL being linked to, if URL type
         /// </summary>
@@ -758,32 +775,32 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Type of paint as a string enum
         /// </summary>
         public PaintType type;
-        
+
         /// <summary>
         /// Is the paint enabled?
         /// </summary>
-        public bool visible=true;
+        public bool visible = true;
 
         /// <summary>
         /// Overall opacity of paint (colors within the paint can also have opacity values which would blend with this)
         /// </summary>
-        public float opacity=1;
+        public float opacity = 1;
 
         //For solid paints:
-        
+
         /// <summary>
         /// Solid color of the paint
         /// </summary>
         public Color color;
-        
-        
+
+
         // For gradient paints:
-        
+
         /// <summary>
         /// How this node blends with nodes behind it in the scene
         /// </summary>
         public BlendMode blendMode;
-        
+
         /// <summary>
         /// This field contains three vectors, each of which are a position in normalized object space (normalized object space is if the top left corner of the bounding box of the object is (0, 0) and the bottom right is (1,1)). The first position corresponds to the start of the gradient (value 0 for the purposes of calculating gradient stops), the second position is the end of the gradient (value 1), and the third handle position determines the width of the gradient. See image examples below:
         /// </summary>
@@ -803,7 +820,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             TILE,
             STRETCH,
         }
-        
+
         /// <summary>
         /// Image scaling mode
         /// </summary>
@@ -829,7 +846,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// A reference to an image embedded in this node. To download the image using this reference, use the GET file images endpoint to retrieve the mapping from image references to image URLs
         /// </summary>
         public string imageRef;
-        
+
         /// <summary>
         /// A reference to the GIF embedded in this node, if the image is a GIF. To download the image using this reference, use the GET file images endpoint to retrieve the mapping from image references to image URLs
         /// </summary>
@@ -894,7 +911,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Font family of text (standard name)
         /// </summary>
         public string fontFamily;
-        
+
         /// <summary>
         /// PostScript font name
         /// </summary>
@@ -934,11 +951,11 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             SMALL_CAPS,
             SMALL_CAPS_FORCED
         }
-        
+
         /// <summary>
         /// Text casing applied to the node, default is the original casing
         /// </summary>
-        public TextCase textCase=TextCase.ORIGINAL;
+        public TextCase textCase = TextCase.ORIGINAL;
 
         public enum TextDecoration
         {
@@ -972,12 +989,12 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             CENTER,
             JUSTIFIED,
         }
-        
+
         /// <summary>
         /// Horizontal text alignment as string enum
         /// </summary>
         public TextAlignHorizontal textAlignHorizontal;
-        
+
         public enum TextAlignVertical
         {
             TOP,
@@ -1001,7 +1018,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         public Paint[] fills;
 
         public Hyperlink hyperlink;
-        
+
         /*
          * opentypeFlagsMap<String, Number> default: {}
 A map of OpenType feature flags to 1 or 0, 1 if it is enabled and 0 if it is disabled. Note that some flags aren't reflected here. For example, SMCP (small caps) is still represented by the textCase fiel
@@ -1015,13 +1032,13 @@ A map of OpenType feature flags to 1 or 0, 1 if it is enabled and 0 if it is dis
         /// <summary>
         /// Line height as a percentage of normal line height. This is deprecated; in a future version of the API only lineHeightPx and lineHeightPercentFontSize will be returned
         /// </summary>
-        public float lineHeightPercent=100;
+        public float lineHeightPercent = 100;
 
         /// <summary>
         /// Line height as a percentage of the font size. Only returned when lineHeightPercent is not 100.
         /// </summary>
         public float lineHeightPercentFontSize;
-        
+
         /// <summary>
         /// The unit of the line height value specified by the user.
         /// Can be
@@ -1094,13 +1111,13 @@ A map of OpenType feature flags to 1 or 0, 1 if it is enabled and 0 if it is dis
         /// Unique identifier specifying the frame
         /// </summary>
         public string nodeId;
-        
+
         /// <summary>
         /// Name of flow
         /// </summary>
         public string name;
     }
-   
-    
-    
+
+
+
 }
