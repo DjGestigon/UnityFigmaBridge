@@ -25,12 +25,12 @@ namespace UnityFigmaBridge.Editor
     /// </summary>
     public static class UnityFigmaBridgeImporter
     {
-        
+
         /// <summary>
         /// The settings asset, containing preferences for importing
         /// </summary>
         private static UnityFigmaBridgeSettings s_UnityFigmaBridgeSettings;
-        
+
         /// <summary>
         /// We'll cache the access token in editor Player prefs
         /// </summary>
@@ -48,7 +48,7 @@ namespace UnityFigmaBridge.Editor
         /// Cached personal access token, retrieved from PlayerPrefs
         /// </summary>
         private static string s_PersonalAccessToken;
-        
+
         /// <summary>
         /// Active canvas used for construction
         /// </summary>
@@ -64,7 +64,7 @@ namespace UnityFigmaBridge.Editor
         {
             SyncAsync();
         }
-        
+
         private static async void SyncAsync()
         {
             var requirementsMet = CheckRequirements();
@@ -86,17 +86,17 @@ namespace UnityFigmaBridge.Editor
                 if (!settingsPageDataIdList.SequenceEqual(downloadPageNodeIdList))
                 {
                     ReportError("The pages found in the Figma document have changed - check your settings file and Sync again when ready", "");
-                    
+
                     // Apply the new page list to serialized data and select to allow the user to change
                     s_UnityFigmaBridgeSettings.RefreshForUpdatedPages(figmaFile);
                     Selection.activeObject = s_UnityFigmaBridgeSettings;
                     EditorUtility.SetDirty(s_UnityFigmaBridgeSettings);
                     AssetDatabase.SaveAssetIfDirty(s_UnityFigmaBridgeSettings);
                     AssetDatabase.Refresh();
-                    
+
                     return;
                 }
-                
+
                 var enabledPageIdList = s_UnityFigmaBridgeSettings.PageDataList.Where(p => p.Selected).Select(p => p.NodeId).ToList();
 
                 if (enabledPageIdList.Count <= 0)
@@ -110,19 +110,20 @@ namespace UnityFigmaBridge.Editor
             }
 
             await ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodeList);
-            
+
         }
 
         /// <summary>
         /// Check to make sure all requirements are met before syncing
         /// </summary>
         /// <returns></returns>
-        public static bool CheckRequirements() {
-            
+        public static bool CheckRequirements()
+        {
+
             // Find the settings asset if it exists
             if (s_UnityFigmaBridgeSettings == null)
                 s_UnityFigmaBridgeSettings = UnityFigmaBridgeSettingsProvider.FindUnityBridgeSettingsAsset();
-            
+
             if (s_UnityFigmaBridgeSettings == null)
             {
                 if (
@@ -138,18 +139,18 @@ namespace UnityFigmaBridge.Editor
                 }
             }
 
-            if (Shader.Find("TextMeshPro/Mobile/Distance Field")==null)
+            if (Shader.Find("TextMeshPro/Mobile/Distance Field") == null)
             {
-                EditorUtility.DisplayDialog("Text Mesh Pro" ,"You need to install TestMeshPro Essentials. Use Window->Text Mesh Pro->Import TMP Essential Resources","OK");
+                EditorUtility.DisplayDialog("Text Mesh Pro", "You need to install TestMeshPro Essentials. Use Window->Text Mesh Pro->Import TMP Essential Resources", "OK");
                 return false;
             }
-            
+
             if (s_UnityFigmaBridgeSettings.FileId.Length == 0)
             {
-                EditorUtility.DisplayDialog("Missing Figma Document" ,"Figma Document Url is not valid, please enter valid URL","OK");
+                EditorUtility.DisplayDialog("Missing Figma Document", "Figma Document Url is not valid, please enter valid URL", "OK");
                 return false;
             }
-            
+
             // Get stored personal access key
             s_PersonalAccessToken = PlayerPrefs.GetString(FIGMA_PERSONAL_ACCESS_TOKEN_PREF_KEY);
 
@@ -158,22 +159,22 @@ namespace UnityFigmaBridge.Editor
                 var setToken = RequestPersonalAccessToken();
                 if (!setToken) return false;
             }
-            
+
             if (Application.isPlaying)
             {
-                EditorUtility.DisplayDialog("Figma Unity Bridge Importer","Please exit play mode before importing", "OK");
+                EditorUtility.DisplayDialog("Figma Unity Bridge Importer", "Please exit play mode before importing", "OK");
                 return false;
             }
-            
+
             // Check all requirements for run time if required
             if (s_UnityFigmaBridgeSettings.BuildPrototypeFlow)
             {
                 if (!CheckRunTimeRequirements())
                     return false;
             }
-            
+
             return true;
-            
+
         }
 
 
@@ -195,7 +196,7 @@ namespace UnityFigmaBridge.Editor
                     return false;
                 }
             }
-            
+
             // If current scene doesnt match, switch
             if (SceneManager.GetActiveScene().path != s_UnityFigmaBridgeSettings.RunTimeAssetsScenePath)
             {
@@ -209,28 +210,28 @@ namespace UnityFigmaBridge.Editor
                     return false;
                 }
             }
-            
+
             // Find a canvas in the active scene
             s_SceneCanvas = Object.FindObjectOfType<Canvas>();
-            
+
             // If doesnt exist create new one
             if (s_SceneCanvas == null)
             {
                 s_SceneCanvas = CreateCanvas(true);
             }
-            
+
             // If we are building a prototype, ensure we have a UI Controller component
             s_PrototypeFlowController = s_SceneCanvas.GetComponent<PrototypeFlowController>();
-            if (s_PrototypeFlowController== null)
+            if (s_PrototypeFlowController == null)
                 s_PrototypeFlowController = s_SceneCanvas.gameObject.AddComponent<PrototypeFlowController>();
-            
+
             return true;
         }
 
         [MenuItem("Figma Bridge/Select Settings File")]
         static void SelectSettings()
         {
-            var bridgeSettings=UnityFigmaBridgeSettingsProvider.FindUnityBridgeSettingsAsset();
+            var bridgeSettings = UnityFigmaBridgeSettingsProvider.FindUnityBridgeSettingsAsset();
             Selection.activeObject = bridgeSettings;
         }
 
@@ -239,7 +240,7 @@ namespace UnityFigmaBridge.Editor
         {
             RequestPersonalAccessToken();
         }
-        
+
         /// <summary>
         /// Launch window to request personal access token
         /// </summary>
@@ -247,12 +248,12 @@ namespace UnityFigmaBridge.Editor
         static bool RequestPersonalAccessToken()
         {
             s_PersonalAccessToken = PlayerPrefs.GetString(FIGMA_PERSONAL_ACCESS_TOKEN_PREF_KEY);
-            var newAccessToken = EditorInputDialog.Show( "Personal Access Token", "Please enter your Figma Personal Access Token (you can create in the 'Developer settings' page)",s_PersonalAccessToken);
+            var newAccessToken = EditorInputDialog.Show("Personal Access Token", "Please enter your Figma Personal Access Token (you can create in the 'Developer settings' page)", s_PersonalAccessToken);
             if (!string.IsNullOrEmpty(newAccessToken))
             {
                 s_PersonalAccessToken = newAccessToken;
-                Debug.Log( $"New access token set {s_PersonalAccessToken}");
-                PlayerPrefs.SetString(FIGMA_PERSONAL_ACCESS_TOKEN_PREF_KEY,s_PersonalAccessToken);
+                Debug.Log($"New access token set {s_PersonalAccessToken}");
+                PlayerPrefs.SetString(FIGMA_PERSONAL_ACCESS_TOKEN_PREF_KEY, s_PersonalAccessToken);
                 PlayerPrefs.Save();
                 return true;
             }
@@ -265,7 +266,7 @@ namespace UnityFigmaBridge.Editor
         {
             // Canvas
             var canvasGameObject = new GameObject("Canvas");
-            var canvas=canvasGameObject.AddComponent<Canvas>();
+            var canvas = canvasGameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvasGameObject.AddComponent<GraphicRaycaster>();
 
@@ -276,7 +277,7 @@ namespace UnityFigmaBridge.Editor
             {
                 // Create new event system
                 var eventSystemGameObject = new GameObject("EventSystem");
-                existingEventSystem=eventSystemGameObject.AddComponent<EventSystem>();
+                existingEventSystem = eventSystemGameObject.AddComponent<EventSystem>();
             }
 
             var pointerInputModule = Object.FindObjectOfType<PointerInputModule>();
@@ -288,11 +289,11 @@ namespace UnityFigmaBridge.Editor
 
             return canvas;
         }
-        
 
-        private static void ReportError(string message,string error)
+
+        private static void ReportError(string message, string error)
         {
-            EditorUtility.DisplayDialog("Unity Figma Bridge Error",message,"Ok");
+            EditorUtility.DisplayDialog("Unity Figma Bridge Error", message, "Ok");
             Debug.LogWarning($"{message}\n {error}\n");
         }
 
@@ -302,9 +303,14 @@ namespace UnityFigmaBridge.Editor
             EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading file", 0);
             try
             {
-                var figmaTask = FigmaApiUtils.GetFigmaDocument(fileId, s_PersonalAccessToken, true);
-                await figmaTask;
-                return figmaTask.Result;
+                var figmaFile = await FigmaApiUtils.GetFigmaDocument(
+                    fileId,
+                    s_PersonalAccessToken,
+                    s_UnityFigmaBridgeSettings.WriteFileJson,
+                    s_UnityFigmaBridgeSettings.DocumentUrl,
+                    s_UnityFigmaBridgeSettings.ImportOnlySpecificNodeFromUrl
+                );
+                return figmaFile;
             }
             catch (Exception e)
             {
@@ -324,15 +330,15 @@ namespace UnityFigmaBridge.Editor
 
             // Build a list of page IDs to download
             var downloadPageIdList = downloadPageNodeList.Select(p => p.id).ToList();
-            
+
             // Ensure we have all required directories, and remove existing files
             // TODO - Once we move to processing only differences, we won't remove existing files
             FigmaPaths.CreateRequiredDirectories();
-            
+
             // Next build a list of all externally referenced components not included in the document (eg
             // from external libraries) and download
             var externalComponentList = FigmaDataUtils.FindMissingComponentDefinitions(figmaFile);
-            
+
             // TODO - Implement external components
             // This is currently not working as only returns a depth of 1 of returned nodes. Need to get original files too
             /*
@@ -358,13 +364,13 @@ namespace UnityFigmaBridge.Editor
             // For any missing component definitions, we are going to find the first instance and switch it to be
             // The source component. This has to be done early to ensure download of server images
             //FigmaFileUtils.ReplaceMissingComponents(figmaFile,externalComponentList);
-            
+
             // Some of the nodes, we'll want to identify to use Figma server side rendering (eg vector shapes, SVGs)
             // First up create a list of nodes we'll substitute with rendered images
-            var serverRenderNodes = FigmaDataUtils.FindAllServerRenderNodesInFile(figmaFile,externalComponentList,downloadPageIdList);
-            
+            var serverRenderNodes = FigmaDataUtils.FindAllServerRenderNodesInFile(figmaFile, externalComponentList, downloadPageIdList);
+
             // Request a render of these nodes on the server if required
-            var serverRenderData=new List<FigmaServerRenderData>();
+            var serverRenderData = new List<FigmaServerRenderData>();
             if (serverRenderNodes.Count > 0)
             {
                 var allNodeIds = serverRenderNodes.Select(serverRenderNode => serverRenderNode.SourceNode.id).ToList();
@@ -376,7 +382,7 @@ namespace UnityFigmaBridge.Editor
                     var nodeBatch = allNodeIds.GetRange(startIndex,
                         Mathf.Min(MAX_SERVER_RENDER_IMAGE_BATCH_SIZE, allNodeIds.Count - startIndex));
                     var serverNodeCsvList = string.Join(",", nodeBatch);
-                    EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading server-rendered image data {i+1}/{batchCount}",(float)i/(float)batchCount);
+                    EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading server-rendered image data {i + 1}/{batchCount}", (float)i / (float)batchCount);
                     try
                     {
                         var figmaTask = FigmaApiUtils.GetFigmaServerRenderData(fileId, s_PersonalAccessToken,
@@ -395,12 +401,12 @@ namespace UnityFigmaBridge.Editor
 
             // Make sure that existing downloaded assets are in the correct format
             FigmaApiUtils.CheckExistingAssetProperties();
-            
+
             // Track fills that are actually used. This is needed as FIGMA has a way of listing any bitmap used rather than active 
-            var foundImageFills = FigmaDataUtils.GetAllImageFillIdsFromFile(figmaFile,downloadPageIdList);
-            
+            var foundImageFills = FigmaDataUtils.GetAllImageFillIdsFromFile(figmaFile, downloadPageIdList);
+
             // Get image fill data for the document (list of urls to download any bitmap data used)
-            FigmaImageFillData activeFigmaImageFillData; 
+            FigmaImageFillData activeFigmaImageFillData;
             EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading image fill data", 0);
             try
             {
@@ -411,17 +417,17 @@ namespace UnityFigmaBridge.Editor
             catch (Exception e)
             {
                 EditorUtility.ClearProgressBar();
-                ReportError("Error downloading Figma Image Fill Data",e.ToString());
+                ReportError("Error downloading Figma Image Fill Data", e.ToString());
                 return;
             }
-            
+
             // Generate a list of all items that need to be downloaded
             var downloadList =
-                FigmaApiUtils.GenerateDownloadQueue(activeFigmaImageFillData,foundImageFills, serverRenderData, serverRenderNodes);
+                FigmaApiUtils.GenerateDownloadQueue(activeFigmaImageFillData, foundImageFills, serverRenderData, serverRenderNodes);
 
             // Download all required files
             await FigmaApiUtils.DownloadFiles(downloadList, s_UnityFigmaBridgeSettings);
-            
+
 
             // Generate font mapping data
             var figmaFontMapTask = FontManager.GenerateFontMapForDocument(figmaFile,
@@ -431,14 +437,14 @@ namespace UnityFigmaBridge.Editor
 
 
             var componentData = new FigmaBridgeComponentData
-            { 
-                MissingComponentDefinitionsList = externalComponentList, 
+            {
+                MissingComponentDefinitionsList = externalComponentList,
             };
-            
+
             // Stores necessary importer data needed for document generator.
             var figmaBridgeProcessData = new FigmaImportProcessData
             {
-                Settings=s_UnityFigmaBridgeSettings,
+                Settings = s_UnityFigmaBridgeSettings,
                 SourceFile = figmaFile,
                 ComponentData = componentData,
                 ServerRenderNodes = serverRenderNodes,
@@ -448,8 +454,8 @@ namespace UnityFigmaBridge.Editor
                 SelectedPagesForImport = downloadPageNodeList,
                 NodeLookupDictionary = FigmaDataUtils.BuildNodeLookupDictionary(figmaFile)
             };
-            
-            
+
+
             // Clear the existing screens on the flowScreen controller
             if (s_UnityFigmaBridgeSettings.BuildPrototypeFlow)
             {
@@ -472,30 +478,30 @@ namespace UnityFigmaBridge.Editor
                 CleanUpPostGeneration();
                 return;
             }
-           
-            
+
+
             // Lastly, for prototype mode, instantiate the default flowScreen and set the scaler up appropriately
             if (s_UnityFigmaBridgeSettings.BuildPrototypeFlow)
             {
                 // Make sure all required default elements are present
                 var screenController = figmaBridgeProcessData.PrototypeFlowController;
-                
+
                 // Find default flow start position
-                screenController.PrototypeFlowInitialScreenId =  FigmaDataUtils.FindPrototypeFlowStartScreenId(figmaBridgeProcessData.SourceFile);;
+                screenController.PrototypeFlowInitialScreenId = FigmaDataUtils.FindPrototypeFlowStartScreenId(figmaBridgeProcessData.SourceFile); ;
 
                 if (screenController.ScreenParentTransform == null)
-                    screenController.ScreenParentTransform=UnityUiUtils.CreateRectTransform("ScreenParentTransform",
+                    screenController.ScreenParentTransform = UnityUiUtils.CreateRectTransform("ScreenParentTransform",
                         figmaBridgeProcessData.PrototypeFlowController.transform as RectTransform);
 
                 if (screenController.TransitionEffect == null)
                 {
                     // Instantiate and apply the default transition effect (loaded from package assets folder)
                     var defaultTransitionAnimationEffect = AssetDatabase.LoadAssetAtPath("Packages/com.simonoliver.unityfigma/UnityFigmaBridge/Assets/TransitionFadeToBlack.prefab", typeof(GameObject)) as GameObject;
-                    var transitionObject = (GameObject) PrefabUtility.InstantiatePrefab(defaultTransitionAnimationEffect,
+                    var transitionObject = (GameObject)PrefabUtility.InstantiatePrefab(defaultTransitionAnimationEffect,
                         screenController.transform.transform);
                     screenController.TransitionEffect =
                         transitionObject.GetComponent<TransitionEffect>();
-                    
+
                     UnityUiUtils.SetTransformFullStretch(transitionObject.transform as RectTransform);
                 }
 
@@ -511,12 +517,12 @@ namespace UnityFigmaBridge.Editor
                         if (canvasScaler == null) canvasScaler = s_SceneCanvas.gameObject.AddComponent<CanvasScaler>();
                         canvasScaler.referenceResolution = defaultSize;
                         // If we are a vertical template, drive by width
-                        canvasScaler.matchWidthOrHeight = (defaultSize.x>defaultSize.y) ? 1f : 0f; // Use height as driver
+                        canvasScaler.matchWidthOrHeight = (defaultSize.x > defaultSize.y) ? 1f : 0f; // Use height as driver
                         canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                     }
 
-                    var screenInstance=(GameObject)PrefabUtility.InstantiatePrefab(defaultScreenData.FigmaScreenPrefab, figmaBridgeProcessData.PrototypeFlowController.ScreenParentTransform);
-                    figmaBridgeProcessData.PrototypeFlowController.SetCurrentScreen(screenInstance,defaultScreenData.FigmaNodeId,true);
+                    var screenInstance = (GameObject)PrefabUtility.InstantiatePrefab(defaultScreenData.FigmaScreenPrefab, figmaBridgeProcessData.PrototypeFlowController.ScreenParentTransform);
+                    figmaBridgeProcessData.PrototypeFlowController.SetCurrentScreen(screenInstance, defaultScreenData.FigmaNodeId, true);
                 }
                 // Write CS file with references to flowScreen name
                 if (s_UnityFigmaBridgeSettings.CreateScreenNameCSharpFile) ScreenNameCodeGenerator.WriteScreenNamesCodeFile(figmaBridgeProcessData.ScreenPrefabs);

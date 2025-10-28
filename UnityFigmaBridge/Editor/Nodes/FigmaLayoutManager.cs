@@ -86,6 +86,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                     switch (node.primaryAxisAlignItems)
                     {
                         // Upper Alignment
+                        case Node.PrimaryAxisAlignItems.SPACE_BETWEEN:
                         case Node.PrimaryAxisAlignItems.MIN:
                             layoutGroup.childAlignment = node.counterAxisAlignItems switch
                             {
@@ -116,7 +117,8 @@ namespace UnityFigmaBridge.Editor.Nodes
                             };
                             break;
                         default:
-                            throw new ArgumentOutOfRangeException();
+                            layoutGroup.childAlignment = TextAnchor.UpperLeft;
+                            break;
                     }
 
                     break;
@@ -126,6 +128,14 @@ namespace UnityFigmaBridge.Editor.Nodes
                     // Setup alignment according to Figma layout. Primary is Horizontal
                     layoutGroup.childAlignment = node.primaryAxisAlignItems switch
                     {
+                        // Treat SPACE_BETWEEN as MIN (UpperLeft)
+                        Node.PrimaryAxisAlignItems.SPACE_BETWEEN => node.counterAxisAlignItems switch
+                        {
+                            Node.CounterAxisAlignItems.MIN => TextAnchor.UpperLeft,
+                            Node.CounterAxisAlignItems.CENTER => TextAnchor.MiddleLeft,
+                            Node.CounterAxisAlignItems.MAX => TextAnchor.LowerLeft,
+                            _ => TextAnchor.UpperLeft // Fallback
+                        },
                         // Left Alignment
                         Node.PrimaryAxisAlignItems.MIN => node.counterAxisAlignItems switch
                         {
@@ -150,7 +160,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                             Node.CounterAxisAlignItems.MAX => TextAnchor.LowerRight,
                             _ => layoutGroup.childAlignment
                         },
-                        _ => throw new ArgumentOutOfRangeException()
+                        _ => TextAnchor.UpperLeft
                     };
                     break;
 
@@ -185,6 +195,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                     // Set alignment (we can borrow this logic from VERTICAL layout)
                     switch (node.primaryAxisAlignItems)
                     {
+                        case Node.PrimaryAxisAlignItems.SPACE_BETWEEN:
                         case Node.PrimaryAxisAlignItems.MIN:
                             gridLayout.childAlignment = node.counterAxisAlignItems switch
                             {
