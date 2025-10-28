@@ -3,15 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityFigmaBridge.Editor.Settings;
 using UnityFigmaBridge.Editor.Utils;
-
+using UnityEditor;
 namespace UnityFigmaBridge.Editor.FigmaApi
 {
-    
+
     /// <summary>
     /// Reason for server rendering
     /// </summary>
@@ -20,7 +19,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         Substitution, // We want to replace a complex node with an image
         Export // We want to export this image
     }
-        
+
     /// <summary>
     /// Encapsulates server render node data
     /// </summary>
@@ -29,11 +28,11 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         public ServerRenderType RenderType = ServerRenderType.Substitution;
         public Node SourceNode;
     }
-    
+
     public static class FigmaApiUtils
     {
         private static string WRITE_FILE_PATH = "FigmaOutput.json";
-        
+
         /// <summary>
         /// Encapsulate download data
         /// </summary>
@@ -49,9 +48,6 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             public string Url;
             public string FilePath;
         }
-        
-        
-
 
         /// <summary>
         /// Get Figma File Id from document Url
@@ -62,22 +58,55 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         {
             // Legacy Format is https://www.figma.com/file/{DOC_ID}/{NAME}?node-id={NODE}
             // New format is https://www.figma.com/design/{DOC_ID}/{NAME}?node-id={NODE}
-            
+
             var legacyInitialSection = "https://www.figma.com/file/";
             var modernInitialSection = "https://www.figma.com/design/";
 
             var legacyInitialSectionIndex = url.IndexOf(legacyInitialSection, StringComparison.Ordinal);
             var modernInitialSectionIndex = url.IndexOf(modernInitialSection, StringComparison.Ordinal);
-            
+
             // If neither found, it's invalid
-            if ( legacyInitialSectionIndex!= 0 && modernInitialSectionIndex!=0) return (false, "");
+            if (legacyInitialSectionIndex != 0 && modernInitialSectionIndex != 0) return (false, "");
             // Select best fit
             var targetSectionToUse = legacyInitialSectionIndex == 0 ? legacyInitialSection : modernInitialSection;
-            
+
             var remainder = url.Substring(targetSectionToUse.Length);
             var nextSeperatorIndex = remainder.IndexOf('/');
             if (nextSeperatorIndex == -1) return (false, "");
             return (true, remainder.Substring(0, nextSeperatorIndex));
+        }
+
+        /// <summary>
+        /// Get Figma Node Id from document Url
+        /// </summary>
+        /// <param name="url">Document Url</param>
+        /// <returns>Node Id</returns>
+        public static (bool, string) GetFigmaNodeIdFromUrl(string url)
+        {
+            var nodeIdIdentifier = "node-id=";
+            // Handle new figma.com/design/ URL format
+            var designNodeIdIdentifier = "?node-id=";
+
+            var nodeIdIndex = url.IndexOf(nodeIdIdentifier);
+            if (nodeIdIndex == -1)
+            {
+                // Try the other format
+                nodeIdIndex = url.IndexOf(designNodeIdIdentifier);
+                if (nodeIdIndex == -1) return (false, "");
+                nodeIdIdentifier = designNodeIdIdentifier;
+            }
+
+            var remainder = url.Substring(nodeIdIndex + nodeIdIdentifier.Length);
+
+            // The node ID can be terminated by an ampersand or just be the end of the string
+            var ampersandIndex = remainder.IndexOf('&');
+            if (ampersandIndex != -1)
+            {
+                return (true, remainder.Substring(0, ampersandIndex));
+            }
+
+            // It's the end of the string
+            return (true, remainder);
         }
 
         /// <summary>
@@ -114,7 +143,63 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                     MissingMemberHandling = MissingMemberHandling.Ignore,
                     NullValueHandling = NullValueHandling.Ignore,
                 };
-                
+
+                // Deserialize the document
+                figmaFile = JsonConvert.DeserializeObject<FigmaFile>(webRequest.downloadHandler.text, settings);
+
+                Debug.Log($"Figma file downloaded, name {figmaFile.name}");
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Problem decoding Figma document JSON {e.ToString()}");
+            }
+
+            if (writeFile) File.WriteAllText(Path.Combine("Assets", WRITE_FILE_PATH), webRequest.downloadHandler.text);
+            return figmaFile;
+        }
+        public static async Task<FigmaFile> GetFigmaDocument(string fileId, string accessToken, bool writeFile, string figmaDocumentUrl, bool importOnlySpecificNode)
+        {
+            var url = $"https://api.figma.com/v1/files/{fileId}?geometry=paths"; // We need geometry=paths to get rotation and full transform
+
+            // Check if the user wants to import a specific node
+            if (importOnlySpecificNode)
+            {
+                (bool success, string specificNodeId) = GetFigmaNodeIdFromUrl(figmaDocumentUrl);
+                if (success)
+                {
+                    // URL-encode the node ID (as it contains colons)
+                    var encodedNodeId = UnityWebRequest.EscapeURL(specificNodeId);
+                    url += $"&ids={encodedNodeId}";
+                    Debug.Log($"Figma Bridge: Importing only specific node: {specificNodeId}");
+                }
+                else
+                {
+                    Debug.LogWarning("Figma Bridge: 'Import Only Specific Node' was checked, but no 'node-id=' was found in the Figma Document Url. Importing all pages.");
+                }
+            }
+
+            FigmaFile figmaFile = null;
+            // Download the Figma Document
+            var webRequest = UnityWebRequest.Get(url);
+            webRequest.SetRequestHeader("X-Figma-Token", accessToken);
+            await webRequest.SendWebRequest();
+
+            if (webRequest.result == UnityWebRequest.Result.ProtocolError ||
+                webRequest.result == UnityWebRequest.Result.ConnectionError)
+            {
+                throw new Exception($"Error downloading FIGMA document: {webRequest.error} url - {url}");
+            }
+
+            try
+            {
+                // Create a settings object to ignore missing members and null fields that sometimes come from Figma
+                JsonSerializerSettings settings = new JsonSerializerSettings()
+                {
+                    DefaultValueHandling = DefaultValueHandling.Include,
+                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                    NullValueHandling = NullValueHandling.Ignore,
+                };
+
                 // Deserialize the document
                 figmaFile = JsonConvert.DeserializeObject<FigmaFile>(webRequest.downloadHandler.text, settings);
 
@@ -144,7 +229,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             FigmaServerRenderData figmaServerRenderData = null;
             // Execute server-side rendering. Sending this webRequest will return a list of all images to download
             var serverRenderUrl =
-                $"https://api.figma.com/v1/images/{fileId}?ids={serverNodeCsvList}&scale={serverRenderImageScale}&use_absolute_bounds=true";
+                $"https://api.figma.com/v1/images/{fileId}?ids={serverNodeCsvList}&scale={serverRenderImageScale}&use_absolute_bounds=true&format=svg";
             var webRequest = UnityWebRequest.Get(serverRenderUrl);
             webRequest.SetRequestHeader("X-Figma-Token", accessToken);
 
@@ -212,15 +297,15 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <param name="nodeIds">List of Node Ids to process</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public static async Task<FigmaFileNodes> GetFigmaFileNodes(string fileId, string accessToken,List<string> nodeIds)
+        public static async Task<FigmaFileNodes> GetFigmaFileNodes(string fileId, string accessToken, List<string> nodeIds)
         {
             FigmaFileNodes fileNodes;
-            var externalComponentsJoined = string.Join(",",nodeIds);
+            var externalComponentsJoined = string.Join(",", nodeIds);
             var componentsUrl = $"https://api.figma.com/v1/files/{fileId}/nodes/?ids={externalComponentsJoined}";
-            
+
             // Download the FIGMA Document
             var webRequest = UnityWebRequest.Get(componentsUrl);
-            webRequest.SetRequestHeader("X-Figma-Token",accessToken);
+            webRequest.SetRequestHeader("X-Figma-Token", accessToken);
             await webRequest.SendWebRequest();
 
             if (webRequest.result is UnityWebRequest.Result.ProtocolError or UnityWebRequest.Result.ConnectionError)
@@ -249,7 +334,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <param name="serverRenderData"></param>
         /// <param name="serverRenderNodes"></param>
         /// <returns></returns>
-        public static List<FigmaDownloadQueueItem> GenerateDownloadQueue(FigmaImageFillData imageFillData,List<string> foundImageFills,List<FigmaServerRenderData> serverRenderData,List<ServerRenderNodeData> serverRenderNodes)
+        public static List<FigmaDownloadQueueItem> GenerateDownloadQueue(FigmaImageFillData imageFillData, List<string> foundImageFills, List<FigmaServerRenderData> serverRenderData, List<ServerRenderNodeData> serverRenderNodes)
         {
             // Check if each image fill file has already been downloaded. If not, add to download list
             //Dictionary<string, string> filteredImageFillList = new Dictionary<string, string>();
@@ -261,7 +346,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 {
                     downloadList.Add(new FigmaDownloadQueueItem
                     {
-                        Url=keyPair.Value,
+                        Url = keyPair.Value,
                         FilePath = FigmaPaths.GetPathForImageFill(keyPair.Key),
                         FileType = FigmaDownloadQueueItem.FigmaFileType.ImageFill
                     });
@@ -269,7 +354,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             }
 
             // If required, process server render images
-           foreach (var serverRenderDataEntry in serverRenderData)
+            foreach (var serverRenderDataEntry in serverRenderData)
             {
                 foreach (var keyPair in serverRenderDataEntry.images)
                 {
@@ -293,7 +378,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
 
             return downloadList;
         }
-        
+
 
         /// <summary>
         /// Download required files and process
@@ -303,31 +388,31 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         {
             var downloadCount = downloadItems.Count;
             var downloadIndex = 0;
-            
+
             // Cycle through each required image and download
             foreach (var downloadItem in downloadItems)
             {
-                EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading Server Image {downloadIndex}/{downloadCount}", (float)downloadIndex/(float) downloadCount);
+                EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading Server Image {downloadIndex}/{downloadCount}", (float)downloadIndex / (float)downloadCount);
                 try
                 {
                     // Download and write the image data
                     var imageDownloadWebRequest = UnityWebRequest.Get(downloadItem.Url);
                     await imageDownloadWebRequest.SendWebRequest();
-                    
+
                     byte[] imageBytes = imageDownloadWebRequest.downloadHandler.data;
-                    
+
                     // Create the directory if needed
-                    var directoryPath= Path.GetDirectoryName(downloadItem.FilePath);
+                    var directoryPath = Path.GetDirectoryName(downloadItem.FilePath);
                     if (!Directory.Exists(directoryPath)) Directory.CreateDirectory(directoryPath);
-                    
-                    File.WriteAllBytes(downloadItem.FilePath,imageBytes);
-                    
+
+                    File.WriteAllBytes(downloadItem.FilePath, imageBytes);
+
                     // Refresh the asset database to ensure the asset has been created
                     AssetDatabase.ImportAsset(downloadItem.FilePath);
                     AssetDatabase.Refresh();
-                    
+
                     // Set the properties for the texture, to mark as a sprite and with alpha transparency and no compression
-                    TextureImporter textureImporter = (TextureImporter) AssetImporter.GetAtPath(downloadItem.FilePath);
+                    TextureImporter textureImporter = (TextureImporter)AssetImporter.GetAtPath(downloadItem.FilePath);
                     textureImporter.textureType = TextureImporterType.Sprite;
                     textureImporter.spriteImportMode = SpriteImportMode.Single;
                     textureImporter.alphaIsTransparency = true;
@@ -346,9 +431,9 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                             // For server rendered images we want to clamp the texture
                             textureImporter.wrapMode = TextureWrapMode.Clamp;
                             break;
-                            
+
                     }
-                    
+
                     textureImporter.SaveAndReimport();
 
                 }
@@ -360,7 +445,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             }
         }
 
-    
+
         /// <summary>
         /// Checks that existing assets are in the correct format
         /// </summary>
